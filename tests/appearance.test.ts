@@ -3,6 +3,9 @@ import { BODY_PRESETS, DEFAULT_APPEARANCE, validAppearance } from '../src/game/a
 import { decodeSave } from '../src/game/save';
 import { newGame } from '../src/game/simulation';
 import headData from '../src/assets/human-head.json';
+import bodyData from '../src/assets/human-body.json';
+import { createBody } from '../src/render/body';
+import { MeshStandardMaterial, Vector3 } from 'three';
 
 describe('character save compatibility', () => {
   it('migrates legacy saves without changing progress or funds', () => {
@@ -39,5 +42,49 @@ describe('imported head geometry', () => {
       expect(data.positions.filter((_, i) => i % 3 === 1).every(y => y >= 1.6 && y <= 1.87)).toBe(true);
       expect(data.eyes).toHaveLength(2);
     }
+  });
+});
+
+describe('continuous body rig', () => {
+  it('has normalized influences and an ordered bone hierarchy', () => {
+    for (const data of Object.values(bodyData)) {
+      expect(data.mass.length).toBe(data.positions.length);
+      expect(data.skinWeights.length).toBe(data.positions.length / 3 * 4);
+      data.parents.forEach((parent, i) => expect(parent).toBeLessThan(i));
+      for (let i = 0; i < data.skinWeights.length; i += 4) {
+        expect(data.skinWeights.slice(i, i + 4).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 5);
+      }
+      expect(data.skinIndices.every(i => Number.isInteger(i) && i >= 0 && i < data.bones.length)).toBe(true);
+      expect(data.regions.flat().every(i => Number.isInteger(i) && i >= 0 && i < data.positions.length / 3)).toBe(true);
+    }
+  });
+  it('keeps all presets finite through a full walk cycle, including extreme proportions', () => {
+    const materials = Array.from({ length: 4 }, () => new MeshStandardMaterial());
+    const presets = [...Object.values(BODY_PRESETS), { ...BODY_PRESETS.curvy!, build: 1, waist: 0, hips: 1, chest: 1 }];
+    for (const preset of presets) {
+      const body = createBody({ ...DEFAULT_APPEARANCE, ...preset }, materials);
+      const positions = body.mesh.geometry.getAttribute('position');
+      const point = new Vector3();
+      for (let time = 0; time < 1; time += .125) {
+        body.animate(time, true, false); body.mesh.updateMatrixWorld(true); body.mesh.skeleton.update();
+        for (let i = 0; i < positions.count; i += 7) {
+          point.fromBufferAttribute(positions, i); body.mesh.applyBoneTransform(i, point);
+          expect(point.toArray().every(Number.isFinite)).toBe(true);
+          expect(point.length()).toBeLessThan(3);
+        }
+      }
+      body.dispose();
+    }
+    materials.forEach(m => m.dispose());
+  });
+  it('produces identical poses at equal times and a stable reduced-motion pose', () => {
+    const materials = Array.from({ length: 4 }, () => new MeshStandardMaterial());
+    const body = createBody(DEFAULT_APPEARANCE, materials);
+    body.animate(1, true, false); const pose = body.mesh.skeleton.bones.map(b => b.rotation.toArray());
+    body.animate(2, true, false); body.animate(1, true, false);
+    expect(body.mesh.skeleton.bones.map(b => b.rotation.toArray())).toEqual(pose);
+    body.animate(1, true, true); const still = body.mesh.skeleton.bones.map(b => b.rotation.toArray());
+    body.animate(100, true, true); expect(body.mesh.skeleton.bones.map(b => b.rotation.toArray())).toEqual(still);
+    body.dispose(); materials.forEach(m => m.dispose());
   });
 });

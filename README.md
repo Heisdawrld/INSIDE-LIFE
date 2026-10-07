@@ -41,7 +41,7 @@ The opening funds, prices and rewards are **game-balancing values**, not claims 
 - Ambient traffic is visual. Driving, traffic right-of-way, injury, vehicle ownership, route fares, rain/flooding and police encounters are not simulated yet.
 - One delivery, one home upgrade, simple need-restoring activities. No career ladders, investment system, crime, robbery, investigations, complex relationships, household control, rent collection or full build mode yet.
 - UI and simulation are separated, but this is **not a secure multiplayer economy**. Local files and browser memory can be edited. A future server must own commands, balances, ownership, transactions and saves.
-- Characters combine CC0 sculpted MakeHuman heads with original parametric clothed bodies and simple walking animation. They remain a stylized prototype: no photoreal skin, individual facial-feature sculpting, clothing wardrobe or production animation pipeline yet.
+- Characters use continuous CC0 anatomical meshes, a 13-bone weighted rig, body-mass deformation and fitted garment regions. The studio includes a Walk preview. They remain a stylized prototype: no photoreal skin, individual facial-feature sculpting, separate clothing wardrobe, cloth simulation or production animation library yet.
 - Browser viewport checks do not prove sustained performance on a physical low-end phone. Hardware profiling is an explicit release gate.
 - Application and fonts are bundled, but there is no installed offline/PWA cache yet.
 
