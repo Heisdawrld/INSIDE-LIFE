@@ -8,6 +8,8 @@ Development environment: Windows, Node 24, pnpm 11.19.0, Chromium-based in-app b
 
 `pnpm audit --prod` and `git diff --check` are additional repository checks. CI repeats the check command with a frozen lockfile on Node 24.
 
+Local checks passed. The initial GitHub Actions run (37607832216) could not start a runner: GitHub reported "The job was not started because your account is locked due to a billing issue." No CI test execution occurred. Account-owner resolution and a subsequent successful CI run are still required.
+
 ## Browser observations
 
 - Desktop: scene and interface render; the production test save reloads with all four objectives completed and virtual balance 10,100 (includes an additional breakfast). Character editing preserves these completed objectives and balance.
