@@ -4,7 +4,7 @@ Development environment: Windows, Node 24, pnpm 11.19.0, Chromium-based in-app b
 
 ## Automated gates
 
-`pnpm check` runs strict TypeScript, Vitest and a production Vite build. 47 tests cover command prerequisites, integer virtual funds, no duplicate delivery reward, cancellation, bounded needs/time, complete first-chapter balance, paths between every destination pair, invalid/corrupt saves, backup recovery, appearance validation, v1 migration, indexed head-asset integrity, normalized body weights, bone hierarchy and finite/reproducible animation across presets and extreme proportions.
+`pnpm check` runs strict TypeScript, Vitest and a production Vite build. 50 tests cover command prerequisites, integer virtual funds, no duplicate delivery reward, cancellation, bounded needs/time, complete first-chapter balance, paths between every destination pair, invalid/corrupt saves, backup recovery, appearance validation, v1 migration, indexed head-asset integrity, normalized body weights, bone hierarchy and finite/reproducible animation across presets and extreme proportions.
 
 `pnpm audit --prod` and `git diff --check` are additional repository checks. CI repeats the check command with a frozen lockfile on Node 24.
 
@@ -35,5 +35,11 @@ Local checks passed. The initial GitHub Actions run (37607832216) could not star
 - Inspected feminine signature and masculine relaxed/walking previews from front and three-quarter views. Verified the Tobi appearance and relaxed fit persist after saving, reloading and reopening the studio.
 - Inspected the updated studio at 390 × 844: preview, look selection, pose controls, scroll region and save action fit. Restored the viewport afterwards. No captured console errors on the isolated production QA tab.
 - Automated checks additionally cover optional wardrobe compatibility, rejecting unknown wardrobe values and uncrossed feet at near-equal heights across every body preset and studio pose.
-- Remaining art limitations: procedural animation lacks planted-foot IK and authored transitions; garment fits share the anatomical topology, with visible sleeve/hem artifacts; face, hair and surface detail remain prototype quality. These changes do not establish Avakin-level visual quality.
+- Remaining art limitations: procedural animation lacks planted-foot IK and authored motion clips; garment fits share the anatomical topology, with visible sleeve/hem artifacts; face, hair and surface detail remain prototype quality. These changes do not establish Avakin-level visual quality.
 - Build still reports a large JS chunk; no new physical-device performance claim is made.
+
+## Pose-transition follow-up
+
+- Added a 280 ms quaternion blend between standing, walking and studio poses. Interrupted transitions restart from the displayed pose; reduced motion and clock rewind bypass/reset interpolation. Three regression tests cover these boundaries.
+- Garment volume now expands along surface normals. A post-morph smoothing pass preserves garment boundaries while reducing sharp surface changes; shoulder and hem artifacts remain visible and need authored clothing topology.
+- Local typecheck, 50 tests and production build pass. Inspected male/female studio previews, Walk-to-Signature controls and the narrow viewport; no captured browser console errors. No physical-device performance benchmark was performed.

@@ -2,6 +2,7 @@ import * as T from 'three';
 import type { Appearance } from '../game/appearance';
 import headData from '../assets/human-head.json';
 import { createBody, type CharacterPose } from './body';
+import { createPoseTransition } from './pose-transition';
 
 export interface Character {
   group: T.Group;
@@ -46,6 +47,7 @@ export function createCharacter(a: Appearance, shirtColor: string, detailed = fa
   }
   const torso = new T.Group(); group.add(torso);
   const body = createBody(a, [skin, cloth, trousers, shoe]); torso.add(body.mesh);
+  const transition = createPoseTransition(body.mesh.skeleton.bones);
 
   // A real sculpted adult head topology, sourced from CC0 MakeHuman assets.
   const head = new T.Group(); torso.add(head);
@@ -117,6 +119,7 @@ export function createCharacter(a: Appearance, shirtColor: string, detailed = fa
     group,
     animate(time, walking, reducedMotion = false, pose = 'natural') {
       body.animate(time, walking, reducedMotion, pose);
+      transition(time, walking ? 'walking' : pose, reducedMotion);
       torso.position.y = !reducedMotion && !walking ? Math.sin(time * 1.8) * .002 : 0;
       head.rotation.y = !reducedMotion && !walking ? Math.sin(time * .3) * .035 : 0;
     },

@@ -43,13 +43,45 @@ export function createBody(a: Appearance, materials: T.Material[]) {
       vertices[i + 2] = center.z + (vertices[i + 2]! - center.z) * thickness;
     }
   }
-  // Clothing volume is separate from the body proportions and skeleton.
-  if (outfit !== 'fitted') for (const i of fabricVertices) {
-    const y = vertices[i * 3 + 1]!;
-    const ease = outfit === 'relaxed' ? .028 : .012;
-    const fade = 1 - T.MathUtils.smoothstep(y, 1.48, 1.58);
-    vertices[i * 3] = vertices[i * 3]! * (1 + ease * 3 * fade);
-    vertices[i * 3 + 2] = vertices[i * 3 + 2]! + Math.sign(vertices[i * 3 + 2]!) * ease * fade;
+  // Fair the garment after body morphs so anatomical creases do not become
+  // sharp fabric ridges. Preserve the collar, sleeves and waist boundaries.
+  const otherRegions = new Set([...data.regions[0]!, ...data.regions[2]!]);
+  const neighbours = new Map<number, Set<number>>();
+  const top = data.regions[1]!;
+  for (let t = 0; t < top.length; t += 3) {
+    const triangle = [top[t]!, top[t + 1]!, top[t + 2]!];
+    for (const i of triangle) {
+      if (!neighbours.has(i)) neighbours.set(i, new Set());
+      for (const j of triangle) if (i !== j) neighbours.get(i)!.add(j);
+    }
+  }
+  let previous = vertices.slice();
+  for (let pass = 0; pass < 20; pass++) {
+    for (const [i, adjacent] of neighbours) {
+      if (otherRegions.has(i)) continue;
+      for (const axis of [0, 2]) {
+        let sum = 0;
+        for (const j of adjacent) sum += previous[j * 3 + axis]!;
+        vertices[i * 3 + axis] = previous[i * 3 + axis]! * .6 + sum / adjacent.size * .4;
+      }
+    }
+    previous = vertices.slice();
+  }
+  // Expand along the surface, not away from the world origin: the latter
+  // flared the sleeve edges and introduced a ridge along the shirt's sides.
+  if (outfit !== 'fitted') {
+    const shell = new T.BufferGeometry();
+    shell.setAttribute('position', new T.Float32BufferAttribute(vertices, 3));
+    shell.setIndex(data.regions.flat()); shell.computeVertexNormals();
+    const normals = shell.getAttribute('normal');
+    for (const i of fabricVertices) {
+      const y = vertices[i * 3 + 1]!;
+      const ease = outfit === 'relaxed' ? .021 : .010;
+      const fade = 1 - T.MathUtils.smoothstep(y, 1.48, 1.575);
+      vertices[i * 3] = vertices[i * 3]! + normals.getX(i) * ease * fade;
+      vertices[i * 3 + 2] = vertices[i * 3 + 2]! + normals.getZ(i) * ease * fade;
+    }
+    shell.dispose();
   }
   for (const i of trouserVertices) {
     const y = vertices[i * 3 + 1]!;
