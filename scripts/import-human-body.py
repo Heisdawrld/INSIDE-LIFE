@@ -31,7 +31,17 @@ for side in ['L', 'R']:
                    f'upperleg01.{side}', f'lowerleg01.{side}', f'foot.{side}']
     parents += [0, start, start + 1, 0, start + 3, start + 4]
 
+for side, wrist in [('L', 3), ('R', 9)]:
+    for finger in range(1, 6):
+        for segment in range(1, 4):
+            name = f'finger{finger}-{segment}.{side}'
+            if name in rig['bones']:
+                parents.append(wrist if segment == 1 else len(bone_names)-1)
+                bone_names.append(name)
+
 def compact_bone(name):
+    if name.startswith('finger') and name in bone_names:
+        return bone_names.index(name)
     side = name[-1]
     if side not in ['L', 'R']:
         return 0
@@ -124,7 +134,7 @@ for frame, sex in [('feminine', 'female'), ('masculine', 'male')]:
     for face in clipped_faces:
         center = [sum(normalized[i][a] for i in face) / len(face) for a in range(3)]
         x, y, z = center
-        arm = sum(sum(vertex_weights[i].get(k, 0) for k in [1, 2, 3, 7, 8, 9]) for i in face) / len(face)
+        arm = sum(sum(vertex_weights[i].get(k, 0) for k in [1, 2, 3, 7, 8, 9] + list(range(13, len(bone_names)))) for i in face) / len(face)
         material = 0 if y > 1.575 else 1 if y >= 1.04 else 2
         if arm > .5:
             shoulder_y = bones[1 if x > 0 else 7][1]
@@ -150,23 +160,32 @@ for frame, sex in [('feminine', 'female'), ('masculine', 'male')]:
         for i in region:
             memberships[i].add(material)
     boundaries = {i for i, m in enumerate(memberships) if len(m) > 1}
+    output_mass = [mass[i][:] for i in ids]
+    output_weights = [dict(vertex_weights[i]) for i in ids]
     for _ in range(32):
         previous = [v[:] for v in output_positions]
+        previous_mass = [v[:] for v in output_mass]
+        previous_weights = [dict(w) for w in output_weights]
         for i in fabric:
             if neighbours[i] and i not in boundaries:
+                keys = set(previous_weights[i])
+                for k in neighbours[i]:
+                    keys.update(previous_weights[k])
+                output_weights[i] = {b: previous_weights[i].get(b, 0) * .55 + sum(previous_weights[k].get(b, 0) for k in neighbours[i]) / len(neighbours[i]) * .45 for b in keys}
                 for a in range(3):
+                    output_mass[i][a] = previous_mass[i][a] * .55 + sum(previous_mass[k][a] for k in neighbours[i]) / len(neighbours[i]) * .45
                     output_positions[i][a] = previous[i][a] * .55 + sum(previous[k][a] for k in neighbours[i]) / len(neighbours[i]) * .45
     skin_indices, skin_weights = [], []
-    for i in ids:
-        top = sorted(vertex_weights[i].items(), key=lambda item: -item[1])[:4] or [(0, 1)]
+    for output_index, i in enumerate(ids):
+        top = sorted(output_weights[output_index].items(), key=lambda item: -item[1])[:4] or [(0, 1)]
         total = sum(w for _, w in top)
         skin_indices += [k for k, _ in top] + [0] * (4-len(top))
         skin_weights += [round(w/total, 6) for _, w in top] + [0] * (4-len(top))
     result[frame] = {
         'positions': [round(v, 6) for p in output_positions for v in p],
-        'mass': [round(v, 6) for i in ids for v in mass[i]],
+        'mass': [round(v, 6) for p in output_mass for v in p],
         'regions': regions, 'skinIndices': skin_indices, 'skinWeights': skin_weights,
-        'bones': [[round(v, 6) for v in p] for p in bones], 'parents': parents,
+        'bones': [[round(v, 6) for v in p] for p in bones], 'parents': parents, 'boneNames': bone_names,
     }
     print(frame, len(ids), 'vertices', sum(len(r) for r in regions)//3, 'triangles', 'shoulder/elbow', bones[1:3])
 

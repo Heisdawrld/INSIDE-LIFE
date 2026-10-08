@@ -4,6 +4,7 @@ export const HAIR_COLORS = ['#201c1a', '#38271e', '#603b25', '#8a5732'] as const
 export const OUTFIT_COLORS = ['#db9b46', '#488d80', '#b96556', '#678eaf'] as const;
 export type HairStyle = 'crop' | 'afro' | 'locs' | 'bun';
 export interface Appearance {
+  outfit?: 'fitted' | 'relaxed' | 'tailored';
   frame: 'feminine' | 'masculine';
   build: number;
   waist: number;
@@ -27,7 +28,8 @@ export const BODY_PRESETS: Record<string, Pick<Appearance, 'frame' | 'build' | '
 export function validAppearance(value: unknown): value is Appearance {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const a = value as Record<string, unknown>;
-  return ['feminine', 'masculine'].includes(a.frame as string)
+  return (a.outfit === undefined || ['fitted', 'relaxed', 'tailored'].includes(a.outfit as string))
+    && ['feminine', 'masculine'].includes(a.frame as string)
     && ['build', 'waist', 'hips', 'chest', 'height', 'face'].every(k => typeof a[k] === 'number' && Number.isFinite(a[k]) && (a[k] as number) >= 0 && (a[k] as number) <= 1)
     && SKIN_TONES.includes(a.skin as typeof SKIN_TONES[number])
     && ['crop', 'afro', 'locs', 'bun'].includes(a.hair as string)

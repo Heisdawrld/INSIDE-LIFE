@@ -1,7 +1,7 @@
 # INSIDE LIFE engineering contract
 
 ## Product
-- Nigerian household simulation plus a shared social world is the long-term direction.
+- A Nigerian avatar-based social world is the core direction (Avakin-like social connection/self-expression); household simulation and virtual earning support it. Prioritize real shared spaces, identity and friends before expanding solo systems.
 - All funds are virtual. Do not add payments, cash-out, cryptocurrency, or real-money investment products.
 - Everyone starts modestly. Do not sell or silently grant wealth to bypass progression.
 - Implement a complete, measurable vertical slice before expanding to more locations or systems.

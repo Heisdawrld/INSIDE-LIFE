@@ -1,11 +1,11 @@
 import * as T from 'three';
 import type { Appearance } from '../game/appearance';
 import headData from '../assets/human-head.json';
-import { createBody } from './body';
+import { createBody, type CharacterPose } from './body';
 
 export interface Character {
   group: T.Group;
-  animate(time: number, walking: boolean, reducedMotion?: boolean): void;
+  animate(time: number, walking: boolean, reducedMotion?: boolean, pose?: CharacterPose): void;
   dispose(): void;
 }
 
@@ -23,7 +23,7 @@ export function createCharacter(a: Appearance, shirtColor: string, detailed = fa
   }
   const skin = material(a.skin, .64);
   const cloth = material(shirtColor, .94);
-  const trousers = material('#27332f', .92);
+  const trousers = material(a.outfit === 'tailored' ? '#d2bf9e' : a.outfit === 'relaxed' ? '#263a51' : '#27332f', .92);
   const hair = material(a.hairColor, .95);
 
   const shoe = material('#d5ba8d', .7);
@@ -115,8 +115,8 @@ export function createCharacter(a: Appearance, shirtColor: string, detailed = fa
   }
   return {
     group,
-    animate(time, walking, reducedMotion = false) {
-      body.animate(time, walking, reducedMotion);
+    animate(time, walking, reducedMotion = false, pose = 'natural') {
+      body.animate(time, walking, reducedMotion, pose);
       torso.position.y = !reducedMotion && !walking ? Math.sin(time * 1.8) * .002 : 0;
       head.rotation.y = !reducedMotion && !walking ? Math.sin(time * .3) * .035 : 0;
     },

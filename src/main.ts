@@ -5,10 +5,11 @@ import { ACTIONS, FIXED_STEP, Simulation, newGame, objectives } from './game/sim
 import type { ActionId, GameState, Need } from './game/simulation';
 import { PLACES, distance, findPath, isWalkable, place } from './game/world';
 import type { PlaceId } from './game/world';
-import { SAVE_KEY, SHIRT_COLORS, decodeSave, loadSave, saveGame } from './game/save';
+import { SAVE_KEY, decodeSave, loadSave, saveGame } from './game/save';
 import { createScene } from './render/scene';
 import type { SceneView } from './render/scene';
 import { openCreator } from './ui/creator';
+import { createEntry } from './ui/entry';
 
 const money = (n: number) => `₦${new Intl.NumberFormat('en-NG').format(n)}`;
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -38,7 +39,7 @@ app.innerHTML = `
     <header class="topbar">
       <a class="brand" href="#" aria-label="INSIDE LIFE home"><span class="brand-mark">IL<span>✳</span></span><span>INSIDE LIFE<small>EVERYBODY STARTS SOMEWHERE</small></span></a>
       <div class="clock"><span class="sun-icon">${icon('sun')}</span><span><strong id="clock">07:30</strong><small id="day">MONDAY · DAY 1</small></span><span class="weather">26°<small>WARM MORNING</small></span></div>
-      <div class="account"><div class="wallet"><small>YOUR WALLET · VIRTUAL</small><strong id="balance">₦12,500</strong></div><button class="icon-button" id="pause" aria-label="Pause game">${icon('pause')}</button><button class="icon-button" id="settings" aria-label="Open settings">${icon('settings')}</button></div>
+      <div class="account"><div class="wallet"><small>YOUR WALLET · VIRTUAL</small><strong id="balance">₦12,500</strong></div><button class="icon-button" id="main-menu" aria-label="Return to main menu">${icon('home')}</button><button class="icon-button" id="pause" aria-label="Pause game">${icon('pause')}</button><button class="icon-button" id="settings" aria-label="Open settings">${icon('settings')}</button></div>
     </header>
     <aside class="chapter"><div class="eyebrow"><span class="live-dot"></span> ORITA STREET, LAGOS</div><p class="chapter-number">CHAPTER 01 / MOVING IN</p><h1>A place<br>to call <em>home.</em></h1><p class="chapter-copy">New neighbours. Small beginnings.<br>A whole life ahead of you.</p><div class="chapter-line"></div><div class="location-note">${icon('pin', 16)} A fictional neighbourhood. A familiar feeling.</div></aside>
     <aside class="journal-card" id="journal-card"><div class="section-head"><span>TODAY’S SMALL WINS</span><span id="progress-count">0 / 4</span></div><div id="objectives"></div><p class="journal-note">One step at a time. You’ll find your way.</p></aside>
@@ -51,7 +52,7 @@ app.innerHTML = `
       <nav class="nav-bar" aria-label="Game navigation"><button data-nav="places" class="active">${icon('pin')}<span>Neighbourhood</span></button><button data-nav="home">${icon('home')}<span>My room</span></button><button data-nav="journal">${icon('book')}<span>My story</span></button><button data-nav="wallet">${icon('bag')}<span>Wallet</span></button></nav>
       <div class="controls-hint"><span>CLICK TO WALK</span><i>·</i><span>WASD / ARROWS</span><i>·</i><span id="save-status">Saved on this device</span></div>
     </footer>
-    <div id="curtain" class="curtain"><section class="welcome"><div class="eyebrow">WELCOME TO INSIDE LIFE</div><h2>Everybody starts<br><em>somewhere.</em></h2><p>A room of your own. ₦12,500 in your pocket.<br>And a street full of possibilities.</p><label for="name">WHAT SHOULD YOUR NEIGHBOURS CALL YOU?</label><input id="name" maxlength="24" value="Dara" autocomplete="off"/><div class="outfit-label">YOUR EVERYDAY COLOUR</div><div class="swatches">${SHIRT_COLORS.map((color, i) => `<button aria-label="Shirt colour ${i + 1}" aria-pressed="${i === 0}" data-shirt="${color}" style="--swatch:${color}"></button>`).join('')}</div><button id="begin" class="primary">Move into Orita Street <span>↗</span></button><button id="continue" class="secondary hidden">Continue your life →</button><p id="load-message" class="load-message"></p><div class="welcome-foot">SINGLE-PLAYER FIRST CHAPTER<br>All funds are virtual. Progress saves on this browser.</div></section></div>
+    <div id="curtain"></div>
     <dialog id="settings-dialog"><div class="section-head"><span>MAKE YOURSELF COMFORTABLE</span><button id="close-settings" aria-label="Close settings">✕</button></div><h2>Your experience</h2><label class="setting"><span>Battery saver<small>Lower resolution, no dynamic shadows</small></span><input type="checkbox" id="low-quality"/></label><label class="setting"><span>Reduce motion<small>Stop ambient animations</small></span><input type="checkbox" id="reduce-motion"/></label><div class="save-tools"><button id="export" class="secondary">Export save</button><label class="secondary import-label">Import save<input type="file" id="import" accept=".json,application/json"/></label></div><p id="settings-note">Local saves belong to this browser. Export a copy before changing devices.</p><p class="fine-print">Foundation build 0.1 · Multiplayer, driving, police and investment systems are not yet implemented.</p></dialog>
   </main>`;
 
@@ -68,9 +69,8 @@ try { storage = window.localStorage; } catch { storage = null; }
 const loaded = storage ? loadSave(storage) : { kind: 'invalid' as const, message: 'Storage is unavailable. Export your progress before leaving.' };
 const sim = new Simulation(loaded.kind === 'loaded' ? loaded.state : newGame());
 let started = false; let paused = false; let dialogPaused = false; let reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-let selectedShirt = sim.state.shirt;
-let selectedAppearance = structuredClone(sim.state.appearance);
-document.querySelectorAll<HTMLButtonElement>('[data-shirt]').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.shirt === selectedShirt)));
+let hasSession = false;
+let entry: ReturnType<typeof createEntry>;
 let selected: PlaceId | null = null;
 let panelMode: 'place' | 'places' | 'wallet' | 'journal' | null = null;
 let panelSignature = '';
@@ -82,32 +82,19 @@ let lastRender = 0;
 let batterySaver = window.innerWidth <= 760;
 view.quality(batterySaver);
 ($('#low-quality') as HTMLInputElement).checked = batterySaver;
-const welcomeSettings = document.createElement('button');
-welcomeSettings.className = 'welcome-save-link';
-welcomeSettings.textContent = 'Import / export a save';
-$('.welcome').append(welcomeSettings);
-const customize = document.createElement('button');
-customize.className = 'secondary customize-entry';
-customize.innerHTML = 'Create your character <span>↗</span>';
-$('#begin').before(customize);
 const editCharacter = document.createElement('button');
 editCharacter.className = 'portrait edit-character';
 editCharacter.setAttribute('aria-label', 'Edit your character');
 editCharacter.innerHTML = '<span>✎</span>';
 $('.portrait').replaceWith(editCharacter);
 function editLook() {
+  if (!started) return;
   dialogPaused = true; keys.clear();
-  openCreator({ appearance: started ? sim.state.appearance : selectedAppearance, shirt: started ? sim.state.shirt : selectedShirt }, choice => {
-    selectedAppearance = structuredClone(choice.appearance); selectedShirt = choice.shirt;
+  openCreator({ appearance: sim.state.appearance, shirt: sim.state.shirt }, choice => {
     sim.state.appearance = structuredClone(choice.appearance); sim.state.shirt = choice.shirt;
-    if (!started && loaded.kind === 'loaded') {
-      loaded.state.appearance = structuredClone(choice.appearance); loaded.state.shirt = choice.shirt;
-    }
-    document.querySelectorAll<HTMLButtonElement>('[data-shirt]').forEach(s => s.setAttribute('aria-pressed', String(s.dataset.shirt === choice.shirt)));
-    dirty = true; if (started) { persist(); toast('Your look is updated. Your life and progress are unchanged.'); }
+    dirty = true; persist(); toast('Your look is updated. Your life and progress are unchanged.');
   }, () => { dialogPaused = false; });
 }
-customize.addEventListener('click', editLook);
 editCharacter.addEventListener('click', editLook);
 const keys = new Set<string>();
 const markers = new Map<PlaceId, HTMLButtonElement>();
@@ -118,11 +105,6 @@ for (const p of PLACES.filter(p => ['shop', 'neighbour', 'mechanic', 'bed'].incl
 }
 $('#needs').innerHTML = (['hunger', 'energy', 'hygiene', 'social'] as Need[]).map((n, i) => `<div class="need" title="${n}"><div>${icon(['food', 'energy', 'water', 'social'][i]!, 15)}<span>${n}</span><b id="value-${n}"></b></div><meter id="need-${n}" min="0" max="100" low="25" high="65" optimum="100" value="60" aria-label="${n}"></meter></div>`).join('');
 
-if (loaded.kind === 'loaded') {
-  $('#continue').classList.remove('hidden');
-  $('#begin').textContent = 'Start a new life';
-  $('#load-message').textContent = loaded.recovered ? 'Your backup save was recovered.' : `Welcome back, ${loaded.state.name}. Your room is waiting.`;
-} else if (loaded.kind === 'invalid') $('#load-message').textContent = loaded.message;
 $('#reduce-motion').toggleAttribute('checked', reducedMotion);
 
 function toast(message: string) { $('#toast').textContent = message; $('#toast').classList.remove('hidden'); toastUntil = performance.now() + 6000; }
@@ -132,22 +114,26 @@ function persist() {
   $('#save-status').textContent = ok ? 'Saved on this device' : 'Not saved · export a copy';
   if (ok) dirty = false;
 }
-function enter(state: GameState) {
-  sim.state = structuredClone(state); sim.cancel(); started = true; saveAllowed = true; dirty = true;
-  $('#curtain').classList.add('hidden'); persist(); updateHud();
-  toast('Welcome to Orita Street. Tap a place to walk there. Aunty Bisi is by the courtyard bench.');
+function setGameAccess(active: boolean) {
+  $('.game-shell').classList.toggle('in-game', active);
+  for (const selector of ['.topbar', '.chapter', '.journal-card', '.camera-tools', '.bottom-ui', '#markers', '#world', '#panel']) {
+    $(selector).inert = !active;
+  }
 }
-$('#begin').addEventListener('click', () => {
-  if (loaded.kind !== 'empty' && !window.confirm('Start a new life? Your current browser save will be replaced. Export it from settings first if you want to keep it.')) return;
-  const state = newGame(($('#name') as HTMLInputElement).value, selectedShirt);
-  state.appearance = structuredClone(selectedAppearance);
-  enter(state);
-});
-$('#continue').addEventListener('click', () => { if (loaded.kind === 'loaded') enter(loaded.state); });
-document.querySelectorAll<HTMLButtonElement>('[data-shirt]').forEach(b => b.addEventListener('click', () => {
-  selectedShirt = b.dataset.shirt!; sim.state.shirt = selectedShirt;
-  document.querySelectorAll('[data-shirt]').forEach(s => s.setAttribute('aria-pressed', String(s === b)));
-}));
+function enter(state: GameState, fresh = false) {
+  sim.state = structuredClone(state); sim.cancel(); started = true; hasSession = true; paused = false;
+  saveAllowed = true; dirty = true; dialogPaused = false;
+  entry.hide(); setGameAccess(true); closePanel(); syncPause(); persist(); updateHud();
+  view.canvas.focus({ preventScroll: true });
+  toast(fresh ? 'Welcome home. Your first small win: greet Aunty Bisi by the courtyard bench.' : `Welcome back, ${sim.state.name}. Your story continues.`);
+}
+function returnToMenu() {
+  if (!started) return;
+  persist(); sim.cancel(); keys.clear(); closePanel(); started = false; setGameAccess(false);
+  $('#toast').classList.add('hidden'); entry.show();
+}
+$('#main-menu').addEventListener('click', returnToMenu);
+$('.brand').addEventListener('click', e => { e.preventDefault(); returnToMenu(); });
 
 function visit(id: PlaceId) {
   if (!started) return;
@@ -243,7 +229,7 @@ $('#zoom-in').onclick = () => view.zoom(.1); $('#zoom-out').onclick = () => view
 const settings = $('#settings-dialog') as HTMLDialogElement;
 const openSettings = () => { dialogPaused = true; keys.clear(); settings.showModal(); };
 $('#settings').onclick = openSettings;
-welcomeSettings.onclick = openSettings;
+
 $('#close-settings').onclick = () => settings.close();
 settings.addEventListener('close', () => { dialogPaused = false; });
 $('#low-quality').addEventListener('change', e => { batterySaver = (e.target as HTMLInputElement).checked; view.quality(batterySaver); });
@@ -276,7 +262,7 @@ view.canvas.addEventListener('pointerdown', e => {
 });
 view.canvas.addEventListener('wheel', e => { e.preventDefault(); view.zoom(e.deltaY > 0 ? -.06 : .06); }, { passive: false });
 window.addEventListener('keydown', e => {
-  if ((e.target as HTMLElement).matches('input,textarea,select') || settings.open || !started) return;
+  if ((e.target as HTMLElement).matches('input,textarea,select') || dialogPaused || !started) return;
   if (['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) { e.preventDefault(); keys.add(e.key); }
   if (e.code === 'Space' && e.target === view.canvas) { e.preventDefault(); paused = !paused; syncPause(); }
   if (e.key === 'Escape') closePanel();
@@ -315,7 +301,7 @@ function loop(now: number) {
     }
     if (sim.notice) { toast(sim.notice); sim.notice = ''; persist(); }
   } else accumulator = 0;
-  if (now - lastRender >= 1000 / (batterySaver ? 30 : 60) && !document.hidden && !dialogPaused) {
+  if (started && now - lastRender >= 1000 / (batterySaver ? 30 : 60) && !document.hidden && !dialogPaused) {
     lastRender = now;
     view.render(sim.state, elapsed, sim.path.length > 0, reducedMotion);
     for (const label of view.labels()) {
@@ -330,5 +316,11 @@ function loop(now: number) {
   if (now > toastUntil) $('#toast').classList.add('hidden');
   frame = requestAnimationFrame(loop);
 }
+entry = createEntry($('#curtain'), {
+  getSave: () => hasSession ? { kind: 'loaded', state: structuredClone(sim.state), recovered: false } : storage ? loadSave(storage) : loaded,
+  onEnter: enter,
+  onSettings: openSettings,
+});
+setGameAccess(false);
 updateHud(); frame = requestAnimationFrame(loop);
-if (import.meta.hot) import.meta.hot.dispose(() => { document.querySelector<HTMLDialogElement>('.character-creator')?.close(); persist(); lifecycle.abort(); cancelAnimationFrame(frame); view.dispose(); });
+if (import.meta.hot) import.meta.hot.dispose(() => { document.querySelector<HTMLDialogElement>('.character-creator')?.close(); persist(); entry.dispose(); lifecycle.abort(); cancelAnimationFrame(frame); view.dispose(); });

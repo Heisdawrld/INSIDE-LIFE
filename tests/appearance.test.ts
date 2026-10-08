@@ -21,7 +21,7 @@ describe('character save compatibility', () => {
       expect(decodeSave(JSON.stringify(state))).toEqual(state);
     }
   });
-  it.each([{ hips: -1 }, { chest: 1.01 }, { height: NaN }, { build: Infinity }, { face: '0.5' }, { hair: 'unknown' }, { skin: 'url(external)' }, { frame: 'unknown' }])('rejects invalid appearance %j', patch => {
+  it.each([{ hips: -1 }, { chest: 1.01 }, { height: NaN }, { build: Infinity }, { face: '0.5' }, { hair: 'unknown' }, { skin: 'url(external)' }, { frame: 'unknown' }, { outfit: 'unknown' }])('rejects invalid appearance %j', patch => {
     const appearance = { ...DEFAULT_APPEARANCE, ...patch };
     expect(validAppearance(appearance)).toBe(false);
     expect(decodeSave(JSON.stringify({ ...newGame(), appearance }))).toBeNull();
@@ -86,5 +86,32 @@ describe('continuous body rig', () => {
     body.animate(1, true, true); const still = body.mesh.skeleton.bones.map(b => b.rotation.toArray());
     body.animate(100, true, true); expect(body.mesh.skeleton.bones.map(b => b.rotation.toArray())).toEqual(still);
     body.dispose(); materials.forEach(m => m.dispose());
+  });
+});
+
+
+describe('studio wardrobe and stance', () => {
+  it('preserves all wardrobe cuts and still accepts earlier v2 appearances', () => {
+    for (const outfit of [undefined, 'fitted', 'relaxed', 'tailored'] as const) {
+      const state = newGame();
+      if (outfit) state.appearance.outfit = outfit;
+      expect(decodeSave(JSON.stringify(state))).toEqual(state);
+    }
+  });
+  it('keeps feet below the hips without crossing in each studio pose', () => {
+    const materials = Array.from({ length: 4 }, () => new MeshStandardMaterial());
+    for (const preset of Object.values(BODY_PRESETS)) {
+      const body = createBody({ ...DEFAULT_APPEARANCE, ...preset }, materials);
+      for (const pose of ['natural', 'confident', 'relaxed'] as const) {
+        body.animate(0, false, true, pose); body.mesh.updateMatrixWorld(true);
+        const left = body.mesh.skeleton.bones[6]!.getWorldPosition(new Vector3());
+        const right = body.mesh.skeleton.bones[12]!.getWorldPosition(new Vector3());
+        expect(left.x).toBeGreaterThan(0); expect(right.x).toBeLessThan(0);
+        expect(left.x - right.x).toBeLessThan(.36);
+        expect(Math.abs(left.y - right.y)).toBeLessThan(.035);
+      }
+      body.dispose();
+    }
+    materials.forEach(m => m.dispose());
   });
 });

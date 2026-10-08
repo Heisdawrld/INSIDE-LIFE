@@ -4,12 +4,12 @@
 
 Build a life that feels recognizably Nigerian. Ordinary beginnings, agency, social connection, ambition, setbacks and recovery. Gameplay must also contain comfort, humour, food, fashion, celebration and friendship.
 
-**Working title:** INSIDE LIFE. **Descriptor:** A Nigerian Life Simulator. **Line:** Everybody starts somewhere. Name/trademark availability has not been researched or cleared.
+**Working title:** INSIDE LIFE. **Direction:** A Nigerian avatar-based social world, with Avakin Life as a category reference and Sims-style life progression supporting it. **Line:** Everybody starts somewhere. Name/trademark availability has not been researched or cleared. Build original characters, assets, interactions and identity; do not copy another game's branding or proprietary content.
 
 ## Non-negotiables
 
 1. All money is virtual. No real-money top-ups or withdrawals.
-2. The everyday life loop is enjoyable alone; other people enrich it.
+2. Real-player social connection, self-expression and shared places are the product's centre. Jobs, money and homes support that social world. Solo play is an onboarding and fallback experience, not the final product definition.
 3. Nigerian identity lives in decisions, infrastructure, behaviour and culture—not just labels and stereotyped hardship.
 4. Losses have plausible causes, proportionate consequences and recovery paths. Do not stack arbitrary punishments.
 5. Players control their characters. Shared possessions, households and relationships need explicit permissions.
@@ -17,7 +17,13 @@ Build a life that feels recognizably Nigerian. Ordinary beginnings, agency, soci
 
 ## Starting life
 
-Everyone starts modestly. Eventually offer balanced ordinary backgrounds (apprentice, school leaver, junior worker, job-seeking graduate), not inherited fortunes. The first chapter has one common start: a rented room, limited funds, basic furniture, a name and outfit colour. Initial prices are design parameters, not real-world economic measurements.
+Everyone starts modestly. Eventually offer balanced ordinary backgrounds (apprentice, school leaver, junior worker, job-seeking graduate), not inherited fortunes. The preview has one common start: a rented room, limited funds, basic furniture and a customizable adult avatar. Initial prices are design parameters, not real-world economic measurements.
+
+## First impression and onboarding
+
+The opening uses original illustrated title art, restrained typography and a clear new/returning-player choice. Current flow: title → display name → adult character studio → arrival briefing → local world. Continue shows actual save details and resumes directly. New-game drafts cannot replace a save until final confirmation. Main menu, help, settings and return navigation are functional.
+
+The production online flow will add sign-in/account creation and a persistent profile before joining shared spaces. Do not collect passwords or imply cloud persistence before authentication and a backend exist. The current preview deliberately offers local play with explicit local-save wording. Concept artwork must remain distinguishable from rendered gameplay.
 
 ## First playable chapter: Moving In
 
@@ -37,7 +43,9 @@ Police trouble, robbery and financial investigations are later fictional systems
 
 ## Social world roadmap
 
-Start with friends visiting an instanced home; small rooms, not a seamless national MMO. Establish server-owned identity and character state, allowed interactions, explicit guest permissions, moderation/reporting/blocking and connection recovery. Only then add shared activities and safe virtual trade.
+Start with one small instanced social courtyard, not a seamless national MMO. Establish persistent authentication and profiles, server-owned avatar/room state, room membership, movement replication, text chat and a friends list. Add functional mute/block/report controls, reconnect handling and room capacity limits with the first social test. The acceptance test is two independently signed-in players seeing and messaging each other from separate clients; local tabs with simulated NPCs do not meet it.
+
+Next add wardrobe ownership, saved outfits, emotes, profile presentation and friend home visits. Home entry and decoration need explicit owner/guest permissions. Shared activities and virtual trading follow only after server ownership and transaction rules are established. Prioritize a small place people enjoy spending time together over a large empty map.
 
 Do not invent social proof, active-user counts or fake multiplayer presences. NPCs and humans must be distinguishable. Personal conversations and safety cannot depend solely on a decorative report button.
 
@@ -59,9 +67,9 @@ Client-authored wealth must never transfer into multiplayer. Decide reset/migrat
 ## Sequence
 
 1. **Foundation:** current local first chapter, tests, scene and input.
-2. **Feel and authenticity:** commissioned/reusable character rigs and animations, street sound, stronger interiors, NPC daily routines, mobile hardware profiling and playtests.
-3. **Everyday consequences:** one job/business, route choices and one household infrastructure system with clear feedback.
-4. **Together:** authoritative small-session visits, privacy, consent and moderation.
-5. **Deeper life:** shared activities, businesses, households and controlled risk systems.
+2. **Opening and identity:** polished title, character onboarding, navigation and consistent avatar art. Current work includes the title/onboarding; final art quality is still open.
+3. **Together first:** persistent accounts and one authoritative shared courtyard with real players, chat, friends, reconnect behavior and moderation tools.
+4. **Expression and belonging:** wardrobe, emotes, profiles, personal homes and guest visits, supported by virtual earning/progression.
+5. **Deeper Nigerian life:** businesses, transport, household infrastructure and controlled risk systems that create stories without crowding out social play.
 
 Do not interpret this roadmap as implemented work or a fixed schedule.

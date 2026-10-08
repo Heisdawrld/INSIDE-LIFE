@@ -88,7 +88,7 @@ export class Simulation {
     } else if (this.path[0]) {
       const goal = this.path[0];
       const length = distance(s.position, goal);
-      const step = Math.min(length, dt * (s.needs.energy < 15 ? 1.6 : 3));
+      const step = Math.min(length, dt * (s.needs.energy < 15 ? 1.0 : 1.65));
       const next = length < .001 ? goal : { x: s.position.x + (goal.x - s.position.x) / length * step, z: s.position.z + (goal.z - s.position.z) / length * step };
       if (isWalkable(next)) s.position = { ...next }; else this.path = [];
       if (length <= step + .001) this.path.shift();
